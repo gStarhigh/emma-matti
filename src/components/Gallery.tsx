@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function Gallery({ images }: { images: any[] }) {
   return (
     <div className="row">
@@ -10,7 +8,7 @@ export default function Gallery({ images }: { images: any[] }) {
         >
           <img
             src={img.secure_url || img.url || img.public_url}
-            alt={img.original_filename || ""}
+            alt={img.original_filename || 'Uppladdad bild'}
             className="img-fluid rounded"
           />
         </div>

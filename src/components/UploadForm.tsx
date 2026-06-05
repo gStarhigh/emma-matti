@@ -8,13 +8,13 @@ export default function UploadForm({ onUploaded }: { onUploaded: (res:any)=>void
 
   async function submit(e: React.FormEvent){
     e.preventDefault();
-    if(!file) return setError('Select a file');
+    if(!file) return setError('Välj en fil');
     setLoading(true); setError(null);
     try{
       const res = await uploadImage(file);
       onUploaded(res);
     }catch(err:any){
-      setError(err.message || 'Upload error');
+      setError(err.message || 'Uppladdningen misslyckades');
     }finally{setLoading(false)}
   }
 
@@ -24,7 +24,7 @@ export default function UploadForm({ onUploaded }: { onUploaded: (res:any)=>void
         <input type="file" className="form-control" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)} />
       </div>
       {error && <div className="alert alert-danger">{error}</div>}
-      <button className="btn btn-primary" disabled={loading}>{loading? 'Uploading...':'Upload'}</button>
+      <button className="btn btn-primary" disabled={loading}>{loading? 'Laddar upp...':'Ladda upp'}</button>
     </form>
   );
 }
