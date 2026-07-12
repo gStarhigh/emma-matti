@@ -1,17 +1,53 @@
 import { useEffect, useMemo, useState } from "react";
 import { Gallery, UploadForm } from "./components";
-import type { GalleryImage } from "./components/Gallery";
+import { getGalleryImageSrc, type GalleryImage } from "./types/gallery";
 import familyImage from "./assets/familyImage.jpg";
 import "./App.css";
 
 export default function App() {
   const [images, setImages] = useState<GalleryImage[]>([]);
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [view, setView] = useState<"home" | "tv">(
     window.location.hash === "#/tv" ? "tv" : "home",
   );
 
   const galleryImages = useMemo(() => [...images], [images]);
   const visibleImageCount = galleryImages.length.toString().padStart(2, "0");
+
+  useEffect(() => {
+    if (!selectedImage) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedImage(null);
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedImage]);
+
+  const lightbox = selectedImage ? (
+    <div
+      className="lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Bild i helskärm"
+      onClick={() => setSelectedImage(null)}
+    >
+      <button
+        className="lightbox__close"
+        type="button"
+        onClick={() => setSelectedImage(null)}
+        aria-label="Stäng helskärmsbild"
+      >
+        Stäng ×
+      </button>
+      <img
+        src={getGalleryImageSrc(selectedImage)}
+        alt={selectedImage.original_filename || "Uppladdad bild"}
+        onClick={(event) => event.stopPropagation()}
+      />
+    </div>
+  ) : null;
 
   useEffect(() => {
     const syncView = () =>
@@ -61,14 +97,22 @@ export default function App() {
                 key={`${img.asset_id || img.public_id || img.secure_url}-${index}`}
                 className="tvpage__tile"
               >
-                <img
-                  src={img.secure_url || img.url || img.public_url}
-                  alt={img.original_filename || "Uppladdad bild"}
-                />
+                <button
+                  className="tvpage__imageButton"
+                  type="button"
+                  onClick={() => setSelectedImage(img)}
+                  aria-label={`Visa ${img.original_filename || "uppladdad bild"} i helskärm`}
+                >
+                  <img
+                    src={getGalleryImageSrc(img)}
+                    alt={img.original_filename || "Uppladdad bild"}
+                  />
+                </button>
               </figure>
             ))}
           </div>
         </section>
+        {lightbox}
       </main>
     );
   }
@@ -129,9 +173,10 @@ export default function App() {
           <h2>Senaste uppladdningar</h2>
         </div>
         <div className="galleryFrame">
-          <Gallery images={galleryImages} />
+          <Gallery images={galleryImages} onImageClick={setSelectedImage} />
         </div>
       </section>
+      {lightbox}
     </main>
   );
 }

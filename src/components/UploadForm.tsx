@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { uploadImage } from "../services/cloudinary";
-import type { GalleryImage } from "./Gallery";
+import type { GalleryImage } from "../types/gallery";
 
 export default function UploadForm({
   onUploaded,
