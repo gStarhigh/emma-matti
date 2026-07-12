@@ -1,4 +1,13 @@
-export default function Gallery({ images }: { images: any[] }) {
+export type GalleryImage = {
+  asset_id?: string;
+  public_id?: string;
+  secure_url?: string;
+  url?: string;
+  public_url?: string;
+  original_filename?: string;
+};
+
+export default function Gallery({ images }: { images: GalleryImage[] }) {
   return (
     <div className="row">
       {images.map((img) => (
@@ -8,7 +17,7 @@ export default function Gallery({ images }: { images: any[] }) {
         >
           <img
             src={img.secure_url || img.url || img.public_url}
-            alt={img.original_filename || 'Uppladdad bild'}
+            alt={img.original_filename || "Uppladdad bild"}
             className="img-fluid rounded"
           />
         </div>

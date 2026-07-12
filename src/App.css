@@ -260,7 +260,6 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
   padding: 18px;
-  animation: tv-scroll 34s linear infinite;
 }
 
 .tvpage__tile {
@@ -276,15 +275,6 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-}
-
-@keyframes tv-scroll {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-50%);
-  }
 }
 
 @media (max-width: 992px) {

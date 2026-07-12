@@ -1,48 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Gallery, UploadForm } from "./components";
+import type { GalleryImage } from "./components/Gallery";
+import familyImage from "./assets/familyImage.jpg";
 import "./App.css";
 
-const placeholderImages = [
-  {
-    asset_id: "placeholder-1",
-    original_filename: "Porträtt i gyllene timmen",
-    secure_url:
-      "https://images.unsplash.com/photo-1529634806980-85c3dd6d34ac?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    asset_id: "placeholder-2",
-    original_filename: "Detaljer från festbordet",
-    secure_url:
-      "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    asset_id: "placeholder-3",
-    original_filename: "Gäster som firar",
-    secure_url:
-      "https://images.unsplash.com/photo-1523438097201-512ae7d59cbb?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    asset_id: "placeholder-4",
-    original_filename: "Belysning från festen",
-    secure_url:
-      "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=900&q=80",
-  },
-];
-
 export default function App() {
-  const [images, setImages] = useState<any[]>([]);
+  const [images, setImages] = useState<GalleryImage[]>([]);
   const [view, setView] = useState<"home" | "tv">(
     window.location.hash === "#/tv" ? "tv" : "home",
   );
 
-  const galleryImages = useMemo(
-    () => [...images, ...placeholderImages],
-    [images],
-  );
-  const tvImages = useMemo(
-    () => [...galleryImages, ...galleryImages],
-    [galleryImages],
-  );
+  const galleryImages = useMemo(() => [...images], [images]);
+  const visibleImageCount = galleryImages.length.toString().padStart(2, "0");
 
   useEffect(() => {
     const syncView = () =>
@@ -51,7 +20,7 @@ export default function App() {
     return () => window.removeEventListener("hashchange", syncView);
   }, []);
 
-  function handleUploaded(res: any) {
+  function handleUploaded(res: GalleryImage) {
     setImages((prev) => [res, ...prev]);
   }
 
@@ -87,7 +56,7 @@ export default function App() {
           aria-label="Animerat galleri med uppladdade bilder"
         >
           <div className="tvpage__track">
-            {tvImages.map((img, index) => (
+            {galleryImages.map((img, index) => (
               <figure
                 key={`${img.asset_id || img.public_id || img.secure_url}-${index}`}
                 className="tvpage__tile"
@@ -124,23 +93,19 @@ export default function App() {
           <p className="eyebrow">Emma & Matti</p>
           <h1>Dela era favoritstunder</h1>
           <p className="lead">
-            En varm startsida där gäster kan ladda upp bilder och bläddra bland
-            de senaste minnena.
+            Dela era bilder från dagen med övriga gäster och brudparet!
           </p>
 
           <div className="hero__stats" aria-label="Gallery highlights">
             <div>
-              <strong>01</strong>
+              <strong>{visibleImageCount}</strong>
               <span>Uppladdade</span>
             </div>
           </div>
         </div>
 
         <div className="hero__imageCard">
-          <img
-            src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80"
-            alt="Festbord med blommor och levande ljus"
-          />
+          <img src={familyImage} alt="Festbord med blommor och levande ljus" />
           <div className="hero__imageOverlay">
             <span>Bröllopsminnen</span>
             <strong>Elegant, ljust och lätt att bläddra i</strong>
