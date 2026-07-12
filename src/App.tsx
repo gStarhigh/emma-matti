@@ -1,11 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Gallery, UploadForm } from "./components";
+import { listGalleryImages } from "./services/cloudinary";
 import { getGalleryImageSrc, type GalleryImage } from "./types/gallery";
 import familyImage from "./assets/familyImage.jpg";
 import "./App.css";
 
+const GALLERY_REFRESH_INTERVAL_MS = 30_000;
+
+function getImageKey(image: GalleryImage) {
+  return image.public_id || image.asset_id || getGalleryImageSrc(image);
+}
+
+function mergeImages(images: GalleryImage[]) {
+  const imageMap = new Map<string, GalleryImage>();
+  images.forEach((image) => {
+    const key = getImageKey(image);
+    if (key && !imageMap.has(key)) imageMap.set(key, image);
+  });
+  return [...imageMap.values()].sort((first, second) =>
+    String(second.created_at || "").localeCompare(
+      String(first.created_at || ""),
+    ),
+  );
+}
+
 export default function App() {
   const [images, setImages] = useState<GalleryImage[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryError, setGalleryError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [view, setView] = useState<"home" | "tv">(
     window.location.hash === "#/tv" ? "tv" : "home",
@@ -13,6 +35,51 @@ export default function App() {
 
   const galleryImages = useMemo(() => [...images], [images]);
   const visibleImageCount = galleryImages.length.toString().padStart(2, "0");
+
+  const refreshGalleryImages = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setGalleryLoading(true);
+      setGalleryError(null);
+    }
+
+    try {
+      const cloudinaryImages = await listGalleryImages();
+      setImages((prev) => mergeImages([...cloudinaryImages, ...prev]));
+    } catch (error: unknown) {
+      if (showLoading) {
+        setGalleryError(
+          error instanceof Error
+            ? error.message
+            : "Kunde inte hämta galleriet från Cloudinary.",
+        );
+      }
+    } finally {
+      if (showLoading) setGalleryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const refreshTimer = window.setTimeout(() => {
+      void refreshGalleryImages();
+    }, 0);
+    return () => window.clearTimeout(refreshTimer);
+  }, [refreshGalleryImages]);
+
+  useEffect(() => {
+    if (view !== "tv") return;
+
+    const initialRefreshTimer = window.setTimeout(() => {
+      void refreshGalleryImages(false);
+    }, 0);
+    const refreshInterval = window.setInterval(() => {
+      void refreshGalleryImages(false);
+    }, GALLERY_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.clearTimeout(initialRefreshTimer);
+      window.clearInterval(refreshInterval);
+    };
+  }, [refreshGalleryImages, view]);
 
   useEffect(() => {
     if (!selectedImage) return;
@@ -57,7 +124,8 @@ export default function App() {
   }, []);
 
   function handleUploaded(res: GalleryImage) {
-    setImages((prev) => [res, ...prev]);
+    setImages((prev) => mergeImages([res, ...prev]));
+    window.setTimeout(() => void refreshGalleryImages(), 1500);
   }
 
   function showHome() {
@@ -173,6 +241,12 @@ export default function App() {
           <h2>Senaste uppladdningar</h2>
         </div>
         <div className="galleryFrame">
+          {galleryLoading && (
+            <div className="alert alert-info">Hämtar galleriet...</div>
+          )}
+          {galleryError && (
+            <div className="alert alert-warning">{galleryError}</div>
+          )}
           <Gallery images={galleryImages} onImageClick={setSelectedImage} />
         </div>
       </section>
