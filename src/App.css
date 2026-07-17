@@ -260,12 +260,21 @@
 .tvpage__stage {
   max-width: 1400px;
   margin: 0 auto;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   height: calc(100vh - 130px);
   border-radius: 34px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45);
+}
+
+.tvpage__stage::-webkit-scrollbar {
+  display: none;
 }
 
 .tvpage__track {

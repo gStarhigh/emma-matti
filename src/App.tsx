@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Gallery, UploadForm } from "./components";
 import { listGalleryImages } from "./services/cloudinary";
 import { getGalleryImageSrc, type GalleryImage } from "./types/gallery";
@@ -6,6 +6,8 @@ import familyImage from "./assets/familyImage.jpg";
 import "./App.css";
 
 const GALLERY_REFRESH_INTERVAL_MS = 30_000;
+const AUTO_SCROLL_SPEED_PX_PER_SEC = 40;
+const AUTO_SCROLL_RESUME_DELAY_MS = 3_000;
 
 function getImageKey(image: GalleryImage) {
   return image.public_id || image.asset_id || getGalleryImageSrc(image);
@@ -32,6 +34,8 @@ export default function App() {
   const [view, setView] = useState<"home" | "tv">(
     window.location.hash === "#/tv" ? "tv" : "home",
   );
+  const tvStageRef = useRef<HTMLDivElement | null>(null);
+  const lastInteractionRef = useRef(0);
 
   const galleryImages = useMemo(() => [...images], [images]);
   const visibleImageCount = galleryImages.length.toString().padStart(2, "0");
@@ -80,6 +84,53 @@ export default function App() {
       window.clearInterval(refreshInterval);
     };
   }, [refreshGalleryImages, view]);
+
+  useEffect(() => {
+    if (view !== "tv") return;
+
+    const stage = tvStageRef.current;
+    if (!stage) return;
+
+    lastInteractionRef.current = 0;
+
+    const markInteraction = () => {
+      lastInteractionRef.current = Date.now();
+    };
+
+    stage.addEventListener("touchstart", markInteraction, { passive: true });
+    stage.addEventListener("pointerdown", markInteraction);
+    stage.addEventListener("wheel", markInteraction, { passive: true });
+
+    let lastTimestamp: number | null = null;
+    let rafId: number;
+
+    const step = (timestamp: number) => {
+      if (lastTimestamp === null) lastTimestamp = timestamp;
+      const deltaSeconds = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      const idleFor = Date.now() - lastInteractionRef.current;
+      if (idleFor > AUTO_SCROLL_RESUME_DELAY_MS) {
+        const maxScroll = stage.scrollHeight - stage.clientHeight;
+        if (maxScroll > 0) {
+          const next =
+            stage.scrollTop + AUTO_SCROLL_SPEED_PX_PER_SEC * deltaSeconds;
+          stage.scrollTop = next >= maxScroll ? 0 : next;
+        }
+      }
+
+      rafId = requestAnimationFrame(step);
+    };
+
+    rafId = requestAnimationFrame(step);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      stage.removeEventListener("touchstart", markInteraction);
+      stage.removeEventListener("pointerdown", markInteraction);
+      stage.removeEventListener("wheel", markInteraction);
+    };
+  }, [view, galleryImages.length]);
 
   useEffect(() => {
     if (!selectedImage) return;
@@ -158,6 +209,7 @@ export default function App() {
         <section
           className="tvpage__stage"
           aria-label="Animerat galleri med uppladdade bilder"
+          ref={tvStageRef}
         >
           <div className="tvpage__track">
             {galleryImages.map((img, index) => (
