@@ -92,14 +92,23 @@ export default function App() {
     if (!stage) return;
 
     lastInteractionRef.current = 0;
+    let ignoreNextScroll = false;
 
     const markInteraction = () => {
       lastInteractionRef.current = Date.now();
     };
 
+    const handleScroll = () => {
+      if (ignoreNextScroll) {
+        ignoreNextScroll = false;
+        return;
+      }
+      markInteraction();
+    };
+
     stage.addEventListener("touchstart", markInteraction, { passive: true });
     stage.addEventListener("pointerdown", markInteraction);
-    stage.addEventListener("wheel", markInteraction, { passive: true });
+    stage.addEventListener("scroll", handleScroll, { passive: true });
 
     let lastTimestamp: number | null = null;
     let rafId: number;
@@ -115,6 +124,7 @@ export default function App() {
         if (maxScroll > 0) {
           const next =
             stage.scrollTop + AUTO_SCROLL_SPEED_PX_PER_SEC * deltaSeconds;
+          ignoreNextScroll = true;
           stage.scrollTop = next >= maxScroll ? 0 : next;
         }
       }
@@ -128,7 +138,7 @@ export default function App() {
       cancelAnimationFrame(rafId);
       stage.removeEventListener("touchstart", markInteraction);
       stage.removeEventListener("pointerdown", markInteraction);
-      stage.removeEventListener("wheel", markInteraction);
+      stage.removeEventListener("scroll", handleScroll);
     };
   }, [view, galleryImages.length]);
 
